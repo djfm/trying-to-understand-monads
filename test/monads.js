@@ -22,14 +22,14 @@ describe('Using Monads', () => {
       const cartesianProduct = (listA, listB) =>
         withMonad(listMonad)(
           ({ inject }) => inject(
-            (a, b) => ({ a, b })
+            (a, b) => [a, b]
           )(listA, listB)
         )
       ;
 
       specify('[1, 2] x [3, 4] = [[1, 3], [1, 4], [2, 3], [2, 4]]', () =>
         cartesianProduct([1, 2], [3, 4]).should.deep.equal(
-          [{ a: 1, b: 3 }, { a: 1, b: 4 }, { a: 2, b: 3 }, { a: 2, b: 4 }]
+          [[1, 3], [1, 4], [2, 3], [2, 4]]
         )
       );
     });
