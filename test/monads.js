@@ -28,6 +28,10 @@ describe('Using Monads', () => {
       specify('[1, 2] x 2 => [2, 4]', () =>
         mulBy2([1, 2]).should.deep.equal([2, 4])
       );
+
+      specify('([1, 2], [3, 4]) x 2 => [2, 2, 4, 4]', () =>
+        mulBy2([1, 2], [3, 4]).should.deep.equal([2, 2, 4, 4])
+      );
     });
 
     describe('makes computing a cartesian product of several lists trivial', () => {
