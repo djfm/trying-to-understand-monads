@@ -4,9 +4,23 @@ const {
 
 const {
   listMonad,
+  maybeMonad,
 } = require('../lib/monads');
 
 describe('Using Monads', () => {
+  describe('the maybe monad', () => {
+    specify('{ just: 1 } x 2 => { just: 2 }', () =>
+      inject(maybeMonad)(x => x * 2)({ just: 1 }).should.deep.equal({ just: 2 })
+    );
+
+    specify('{ just: 1 } x { nothing: true } => { nothing: true }', () =>
+      inject(maybeMonad)((a, b) => a * b)(
+        { just: 1 },
+        { nothing: true }
+      ).should.deep.equal({ nothing: true })
+    );
+  });
+
   describe('the list monad', () => {
     describe('is convenient to map a function over a list', () => {
       const mulBy2 = inject(listMonad)(x => x * 2);
