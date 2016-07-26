@@ -27,5 +27,14 @@ describe('Some General Purpose Functional Programming Utilities', () => {
         curry((a, b, c) => a - b + c)(1)(2, 3).should.equal(2);
       }
     );
+
+    it(
+      'accepts an optional length parameter ' +
+      'that lets you curry a function whose number of arguments ' +
+      'is not known until call time',
+      () => curry((...args) => args, 3)(1)(2)(3).should.deep.equal([
+        1, 2, 3,
+      ])
+    );
   });
 });
