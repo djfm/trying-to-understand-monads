@@ -31,7 +31,7 @@ describe('Using Monads', () => {
     });
 
     describe('makes computing a cartesian product of several lists trivial', () => {
-      const cartesianProduct = inject(listMonad)((a, b) => [a, b]);
+      const cartesianProduct = inject(listMonad)((...args) => args);
 
       specify('[1, 2] x [3, 4] = [[1, 3], [1, 4], [2, 3], [2, 4]]', () =>
         cartesianProduct([1, 2], [3, 4]).should.deep.equal(
