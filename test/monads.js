@@ -31,13 +31,23 @@ describe('Using Monads', () => {
     });
 
     describe('makes computing a cartesian product of several lists trivial', () => {
-      const cartesianProduct = inject(listMonad)((...args) => args);
+      const cartesianProduct = inject(listMonad)((...args) => [].concat(...args));
 
       specify('[1, 2] x [3, 4] = [[1, 3], [1, 4], [2, 3], [2, 4]]', () =>
         cartesianProduct([1, 2], [3, 4]).should.deep.equal(
           [[1, 3], [1, 4], [2, 3], [2, 4]]
         )
       );
+
+      specify('the cartesian product is left- and right- associative', () => {
+        cartesianProduct([1, 2], [3, 4], [5, 6]).should.deep.equal(
+          cartesianProduct([1, 2], cartesianProduct([3, 4], [5, 6]))
+        );
+
+        cartesianProduct([1, 2], [3, 4], [5, 6]).should.deep.equal(
+          cartesianProduct(cartesianProduct([1, 2], [3, 4]), [5, 6])
+        );
+      });
     });
   });
 });
