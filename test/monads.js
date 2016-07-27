@@ -64,5 +64,36 @@ describe('Using Monads', () => {
         normalValue.should.equal(8);
       })
     );
+
+    const sum2 = (x, y) => x + y;
+    const sub2 = (x, y) => x - y;
+
+    it('chains multiple operations together', () =>
+      inject(promiseMonad)(sum2)(
+        inject(promiseMonad)(sub2)(
+          promiseMonad.make(8),
+          promiseMonad.make(4)
+        ),
+        promiseMonad.make(4)
+      ).then(normalValue => {
+        normalValue.should.equal(8);
+      })
+    );
+
+    it('propagates failure', () =>
+      inject(promiseMonad)(sum2)(
+        inject(promiseMonad)(sub2)(
+          Promise.reject(new Error('Nope!')),
+          promiseMonad.make(4)
+        ),
+        promiseMonad.make(4)
+      )
+      .then(() => {
+        throw new Error('The computation should not have succeeded.');
+      })
+      .catch(error => {
+        error.message.should.equal('Nope!');
+      })
+    );
   });
 });
