@@ -5,6 +5,7 @@ const {
 const {
   listMonad,
   maybeMonad,
+  promiseMonad,
 } = require('../lib/monads');
 
 describe('Using Monads', () => {
@@ -53,5 +54,15 @@ describe('Using Monads', () => {
         );
       });
     });
+  });
+
+  describe('the promise monad', () => {
+    it('chains operations together', () =>
+      inject(promiseMonad)(x => x * 2)(
+        promiseMonad.make(4)
+      ).then(normalValue => {
+        normalValue.should.equal(8);
+      })
+    );
   });
 });
