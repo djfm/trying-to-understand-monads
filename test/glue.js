@@ -33,4 +33,13 @@ describe('The Monadic Glue', () => {
       x => maybeMonad.make(x - 4)
     )(maybeMonad.make(2)).should.deep.equal({ just: 0 })
   );
+
+  specify('...especially when there are many monadic operations to perform!', () =>
+    chain(maybeMonad)(
+      x => maybeMonad.make(2 * x),
+      x => maybeMonad.make(x - 4),
+      x => maybeMonad.make(x + 1),
+      x => maybeMonad.make(x - 2)
+    )(maybeMonad.make(2)).should.deep.equal({ just: -1 })
+  );
 });
