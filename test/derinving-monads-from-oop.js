@@ -1,3 +1,7 @@
+const {
+  chain,
+} = require('../lib/glue');
+
 describe('Deriving Monads from OOP', () => {
   context('I have a simple vector class that can "add" and "sub" another vector...', () => {
     class Vector {
@@ -37,7 +41,7 @@ describe('Deriving Monads from OOP', () => {
 
     context('...but hell, my API produced a list of vectors...', () => {
       specify('...and I need to sum them all!', () => {
-        class SmarterVector extends Vector {
+        class AddVector extends Vector {
           static add(firstVector, ...nextVectors) {
             return nextVectors.reduce(
               (sumSoFar, vectorToAdd) => sumSoFar.add(vectorToAdd),
@@ -52,17 +56,17 @@ describe('Deriving Monads from OOP', () => {
           new Vector(5, 6),
         ];
 
-        SmarterVector.add(...vectors).should.deep.equal({
+        AddVector.add(...vectors).should.deep.equal({
           x: 9,
           y: 12,
         });
       });
 
       specify('...and I need to sub them all for some reason!', () => {
-        class SmarterVector extends Vector {
-          static add(firstVector, ...nextVectors) {
+        class SubVector extends Vector {
+          static sub(firstVector, ...nextVectors) {
             return nextVectors.reduce(
-              (sumSoFar, vectorToAdd) => sumSoFar.add(vectorToAdd),
+              (sumSoFar, vectorToAdd) => sumSoFar.sub(vectorToAdd),
               firstVector
             );
           }
@@ -74,11 +78,54 @@ describe('Deriving Monads from OOP', () => {
           new Vector(5, 6),
         ];
 
-        SmarterVector.add(...vectors).should.deep.equal({
-          x: 9,
-          y: 12,
+        SubVector.sub(...vectors).should.deep.equal({
+          x: -7,
+          y: -8,
         });
       });
+
+      context(
+        'this is becoming tiring, always writing the n-ary function the same way...',
+        () => {
+          const chainFluent = (methodName) =>
+            (firstInstance, ...nextInstances) =>
+              chain({
+                bind: instance => otherInstance =>
+                  instance[methodName](otherInstance),
+              })(...nextInstances)(firstInstance)
+          ;
+
+          specify('"add" runs Vector.add on successive values', () => {
+            const add = chainFluent('add');
+
+            const vectors = [
+              new Vector(1, 2),
+              new Vector(3, 4),
+              new Vector(5, 6),
+            ];
+
+            add(...vectors).should.deep.equal({
+              x: 9,
+              y: 12,
+            });
+          });
+
+          specify('"sub" runs Vector.add on successive values', () => {
+            const sub = chainFluent('sub');
+
+            const vectors = [
+              new Vector(1, 2),
+              new Vector(3, 4),
+              new Vector(5, 6),
+            ];
+
+            sub(...vectors).should.deep.equal({
+              x: -7,
+              y: -8,
+            });
+          });
+        }
+      );
     });
   });
 });
