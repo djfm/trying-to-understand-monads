@@ -1,5 +1,5 @@
 const {
-  chain,
+  chainFluent,
 } = require('../lib/glue');
 
 describe('Deriving Monads from OOP', () => {
@@ -87,14 +87,6 @@ describe('Deriving Monads from OOP', () => {
       context(
         'this is becoming tiring, always writing the n-ary function the same way...',
         () => {
-          const chainFluent = (methodName) =>
-            (firstInstance, ...nextInstances) =>
-              chain({
-                bind: instance => otherInstance =>
-                  instance[methodName](otherInstance),
-              })(...nextInstances)(firstInstance)
-          ;
-
           specify('"add" runs Vector.add on successive values', () => {
             const add = chainFluent('add');
 
