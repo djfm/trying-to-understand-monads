@@ -2,6 +2,7 @@ const {
   doWithin,
   inject,
   chain,
+  compose,
 } = require('../lib/glue');
 
 const { maybeMonad } = require('../lib/monads');
@@ -42,4 +43,15 @@ describe('The Monadic Glue', () => {
       x => maybeMonad.make(x - 2)
     )(maybeMonad.make(2)).should.deep.equal({ just: -1 })
   );
+
+  describe('"compose"', () => {
+    it('composes a bunch of functions', () =>
+      compose(
+        x => x + 1,
+        x => x - 1,
+        x => x + 4,
+        x => x / 2
+      )(0).should.equal(2)
+    );
+  });
 });
