@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --require test/harness",
-    "test:watch": "npm run test -- -w"
+    "test:watch": "npm run test -- -w",
+    "test:promise": "promises-aplus-tests lib/promise",
+    "test:promise:bail": "npm run test:promise -- --bail"
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +16,7 @@
     "eslint": "^3.1.1",
     "eslint-config-airbnb": "^9.0.1",
     "eslint-plugin-import": "^1.11.1",
-    "mocha": "^2.5.3"
+    "mocha": "^2.5.3",
+    "promises-aplus-tests": "^2.1.2"
   }
 }
