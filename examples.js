@@ -19,36 +19,22 @@ const adaptNativeAPI = NativePromise => ({
   },
 });
 
-const defaultTo = replacementFn =>
-  candidateFn => (
-      typeof candidateFn === 'function' ?
-        candidateFn :
-        replacementFn
-  )
-;
-
-const defaultToId = defaultTo(x => x);
-
-const promise = {
-  resolve: value => ({
-    then: withValue =>
-      Promise.resolve(defaultTo(promise.resolve)(withValue)(value)),
-  }),
-  reject: value => ({
-    then: (unused, withValue) =>
-      Promise.resolve(value).then(
-        defaultTo(promise.reject)(withValue)
-      ),
-  }),
+const continueComputation = ({ state, value, handler }) => {
+  const transform = handler.transformInput[state];
+  if (typeof transform === 'function') {
+    try {
+      handler.propagateOutput.resolved(transform(value));
+    } catch (e) {
+      handler.propagateOutput.rejected(e);
+    }
+  } else {
+    handler.propagateOutput[state](value);
+  }
 };
 
 const doSettle = ({ state, value, handlers }) => {
   for (const handler of handlers) {
-    if (state === 'resolved') {
-      handler.onResolve(value);
-    } else if (state === 'rejected') {
-      handler.onReject(value);
-    }
+    continueComputation({ state, value, handler });
   }
 };
 
@@ -87,11 +73,17 @@ const deferred = () => {
     }
   };
 
-  const then = (onResolve, onReject) => {
+  const then = (onResolved, onRejected) => {
     const nextDeferred = deferred();
     handlers.push({
-      onResolve: v => nextDeferred.resolve(defaultToId(onResolve)(v)),
-      onReject: v => nextDeferred.reject(defaultToId(onReject)(v)),
+      transformInput: {
+        resolved: onResolved,
+        rejected: onRejected,
+      },
+      propagateOutput: {
+        resolved: nextDeferred.resolve,
+        rejected: nextDeferred.reject,
+      },
     });
     settle();
 
@@ -108,8 +100,16 @@ const deferred = () => {
 };
 
 const APlus = {
-  resolved: promise.resolve,
-  rejected: promise.reject,
+  resolved: value => {
+    const d = deferred();
+    d.resolve(value);
+    return d.promise;
+  },
+  rejected: value => {
+    const d = deferred();
+    d.reject(value);
+    return d.promise;
+  },
   deferred,
 };
 
@@ -198,12 +198,19 @@ for (const [desc, P] of
           x => x.should.equal(1)
         );
       });
+
+      it('the reject handler at the end of a chain is called on reject', () => {
+        const d = P.deferred();
+
+        setTimeout(() => d.reject(0), 50);
+
+        return d.promise.then(add(2)).then(sub(1)).then(
+          undefined,
+          x => x.should.equal(0)
+        );
+      });
     });
   });
 }
 
-module.exports = {
-  resolved: promise.resolve,
-  rejected: promise.reject,
-  deferred,
-};
+module.exports = APlus;
