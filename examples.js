@@ -28,6 +28,16 @@ const promise = {
   }),
 };
 
+const doSettle = ({ state, value, handlers }) => {
+  for (const handler of handlers) {
+    if (state === 'resolved') {
+      handler.onResolve(value);
+    } else if (state === 'rejected') {
+      handler.onReject(value);
+    }
+  }
+};
+
 const deferred = () => {
   let handlers = [];
   let state = 'pending';
@@ -38,13 +48,11 @@ const deferred = () => {
       return;
     }
 
-    for (const handler of handlers) {
-      if (state === 'resolved') {
-        handler.onResolve(value);
-      } else if (state === 'rejected') {
-        handler.onReject(value);
-      }
-    }
+    doSettle({
+      state,
+      value,
+      handlers,
+    });
 
     handlers = [];
   };
@@ -53,7 +61,7 @@ const deferred = () => {
     if (state === 'pending') {
       state = 'resolved';
       value = resolvedValue;
-      settle();
+      setImmediate(settle);
     }
   };
 
@@ -61,7 +69,7 @@ const deferred = () => {
     if (state === 'pending') {
       state = 'rejected';
       value = rejectedValue;
-      settle();
+      setImmediate(settle);
     }
   };
 
@@ -147,6 +155,23 @@ for (const [desc, P] of
     });
   });
 }
+
+describe('Promises are async in a weird way', () => {
+  it('the handlers are not called until the promise is resolved', done => {
+    const d = deferred();
+    let isFulfilled = false;
+
+    d.promise.then(() => {
+      isFulfilled.should.equal(true);
+      done();
+    });
+
+    setTimeout(() => {
+      d.resolve('hey');
+      isFulfilled = true;
+    }, 50);
+  });
+});
 
 module.exports = {
   resolved: promise.resolve,
