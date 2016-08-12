@@ -5,6 +5,20 @@ if (!global.describe) {
   chai.should();
 }
 
+const adaptNativeAPI = NativePromise => ({
+  resolved: v => NativePromise.resolve(v),
+  rejected: v => NativePromise.reject(v),
+  deferred: () => {
+    const d = {};
+    const p = new Promise((resolve, reject) => {
+      d.resolve = resolve;
+      d.reject = reject;
+    });
+    d.promise = p;
+    return d;
+  },
+});
+
 const defaultTo = replacementFn =>
   candidateFn => (
       typeof candidateFn === 'function' ?
@@ -74,15 +88,14 @@ const deferred = () => {
   };
 
   const then = (onResolve, onReject) => {
+    const nextDeferred = deferred();
     handlers.push({
-      onResolve: defaultToId(onResolve),
-      onReject: defaultToId(onReject),
+      onResolve: v => nextDeferred.resolve(defaultToId(onResolve)(v)),
+      onReject: v => nextDeferred.reject(defaultToId(onReject)(v)),
     });
     settle();
 
-    return {
-      then,
-    };
+    return nextDeferred.promise;
   };
 
   return {
@@ -94,17 +107,23 @@ const deferred = () => {
   };
 };
 
+const APlus = {
+  resolved: promise.resolve,
+  rejected: promise.reject,
+  deferred,
+};
+
 const add = x => y => x + y;
 const sub = x => y => y - x;
 
 for (const [desc, P] of
   [
-    ['Native', Promise],
-    ['Candidate Implementation', promise],
+    ['Native', adaptNativeAPI(Promise)],
+    ['Candidate Implementation', APlus],
   ]) {
   describe(desc, () => {
     describe('A chain', () => {
-      const p = P.resolve(0)
+      const p = P.resolved(0)
         .then(add(2))
         .then(add(3))
       ;
@@ -128,7 +147,7 @@ for (const [desc, P] of
       );
 
       describe('rejected values are handled by the right handler', () => {
-        const f = P.reject(1);
+        const f = P.rejected(1);
 
         it('the second handler is called', () =>
           f.then(undefined, x => x.should.equal(1))
@@ -139,39 +158,49 @@ for (const [desc, P] of
         );
 
         it('unless the error handler rejects', () =>
-          f.then(undefined, () => P.reject(2)).then(undefined, x => x.should.equal(2))
+          f.then(undefined, () => P.rejected(2)).then(undefined, x => x.should.equal(2))
         );
       });
 
       describe('handlers that are not functions are ignored', () => {
         it('a missing reject handler in the middle of the chain is ignored', done =>
-          P.reject('hey').then(() => null, undefined).then(undefined, () => done())
+          P.rejected('hey').then(() => null, undefined).then(undefined, () => done())
         );
 
         it('a missing resolve handler in the middle of the chained is ignored', done =>
-          P.resolve('hey').then(undefined, () => null).then(() => done())
+          P.resolved('hey').then(undefined, () => null).then(() => done())
+        );
+      });
+    });
+
+    describe('Promises are async in a weird way', () => {
+      it('the handlers are not called until the promise is resolved', done => {
+        const d = P.deferred();
+        let isFulfilled = false;
+
+        d.promise.then(() => {
+          isFulfilled.should.equal(true);
+          done();
+        });
+
+        setTimeout(() => {
+          d.resolve('hey');
+          isFulfilled = true;
+        }, 50);
+      });
+
+      it('the handlers at the end of a chain are called on resolve', () => {
+        const d = P.deferred();
+
+        setTimeout(() => d.resolve(0), 50);
+
+        return d.promise.then(add(2)).then(sub(1)).then(
+          x => x.should.equal(1)
         );
       });
     });
   });
 }
-
-describe('Promises are async in a weird way', () => {
-  it('the handlers are not called until the promise is resolved', done => {
-    const d = deferred();
-    let isFulfilled = false;
-
-    d.promise.then(() => {
-      isFulfilled.should.equal(true);
-      done();
-    });
-
-    setTimeout(() => {
-      d.resolve('hey');
-      isFulfilled = true;
-    }, 50);
-  });
-});
 
 module.exports = {
   resolved: promise.resolve,
