@@ -1,16 +1,30 @@
-require('chai').should();
+const chai = require('chai');
+if (!global.describe) {
+  global.describe = () => null;
+} else {
+  chai.should();
+}
 
-const add = x => y => x + y;
-const sub = x => y => y - x;
+const defaultTo = replacementFn =>
+  candidateFn => (
+      typeof candidateFn === 'function' ?
+        candidateFn :
+        replacementFn
+  )
+;
+
+const defaultToId = defaultTo(x => x);
 
 const promise = {
   resolve: value => ({
     then: withValue =>
-      Promise.resolve(withValue(value)),
+      Promise.resolve(defaultTo(promise.resolve)(withValue)(value)),
   }),
   reject: value => ({
     then: (unused, withValue) =>
-      Promise.resolve(value).then(withValue),
+      Promise.resolve(value).then(
+        defaultTo(promise.reject)(withValue)
+      ),
   }),
 };
 
@@ -28,7 +42,7 @@ const deferred = () => {
       if (state === 'resolved') {
         handler.onResolve(value);
       } else if (state === 'rejected') {
-        handler.onRejected(value);
+        handler.onReject(value);
       }
     }
 
@@ -52,7 +66,10 @@ const deferred = () => {
   };
 
   const then = (onResolve, onReject) => {
-    handlers.push({ onResolve, onReject });
+    handlers.push({
+      onResolve: defaultToId(onResolve),
+      onReject: defaultToId(onReject),
+    });
     settle();
 
     return {
@@ -69,10 +86,8 @@ const deferred = () => {
   };
 };
 
-const d = deferred();
-console.log('deferred:', d);
-d.promise.then(x => console.log(x));
-d.resolve('aaa');
+const add = x => y => x + y;
+const sub = x => y => y - x;
 
 for (const [desc, P] of
   [
@@ -117,6 +132,16 @@ for (const [desc, P] of
 
         it('unless the error handler rejects', () =>
           f.then(undefined, () => P.reject(2)).then(undefined, x => x.should.equal(2))
+        );
+      });
+
+      describe('handlers that are not functions are ignored', () => {
+        it('a missing reject handler in the middle of the chain is ignored', done =>
+          P.reject('hey').then(() => null, undefined).then(undefined, () => done())
+        );
+
+        it('a missing resolve handler in the middle of the chained is ignored', done =>
+          P.resolve('hey').then(undefined, () => null).then(() => done())
         );
       });
     });
