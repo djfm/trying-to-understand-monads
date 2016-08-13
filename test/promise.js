@@ -139,5 +139,27 @@ for (const [desc, P] of
           x => x.should.equal('hey')
         );
     });
+
+    it('the state of deep a misbehaving resolved promise is assumed', done => {
+      const y = {
+        then: onFulfilled => onFulfilled({
+          then: handler => {
+            handler('hey');
+            handler('hoo');
+          },
+        }),
+      };
+      return P
+        .resolved('dummy')
+        .then(() => P.resolved(y))
+        .then(x => {
+          try {
+            x.should.equal('hey');
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+    });
   });
 }
