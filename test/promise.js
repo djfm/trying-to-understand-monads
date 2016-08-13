@@ -1,9 +1,4 @@
-const chai = require('chai');
-if (!global.describe) {
-  global.describe = () => null;
-} else {
-  chai.should();
-}
+const promise = require('../lib/promise');
 
 const adaptNativeAPI = NativePromise => ({
   resolved: v => NativePromise.resolve(v),
@@ -19,110 +14,13 @@ const adaptNativeAPI = NativePromise => ({
   },
 });
 
-const continueComputation = ({ state, value, handler }) => {
-  const transform = handler.transformInput[state];
-  if (typeof transform === 'function') {
-    try {
-      handler.propagateOutput.resolved(transform(value));
-    } catch (e) {
-      handler.propagateOutput.rejected(e);
-    }
-  } else {
-    handler.propagateOutput[state](value);
-  }
-};
-
-const doSettle = ({ state, value, handlers }) => {
-  for (const handler of handlers) {
-    continueComputation({ state, value, handler });
-  }
-};
-
-const deferred = () => {
-  let handlers = [];
-  let state = 'pending';
-  let value;
-
-  const settle = () => {
-    if (state === 'pending') {
-      return;
-    }
-
-    doSettle({
-      state,
-      value,
-      handlers,
-    });
-
-    handlers = [];
-  };
-
-  const resolve = resolvedValue => {
-    if (state === 'pending') {
-      state = 'resolved';
-      value = resolvedValue;
-      setImmediate(settle);
-    }
-  };
-
-  const reject = rejectedValue => {
-    if (state === 'pending') {
-      state = 'rejected';
-      value = rejectedValue;
-      setImmediate(settle);
-    }
-  };
-
-  const then = (onResolved, onRejected) => {
-    const nextDeferred = deferred();
-
-    setImmediate(() => {
-      handlers.push({
-        transformInput: {
-          resolved: onResolved,
-          rejected: onRejected,
-        },
-        propagateOutput: {
-          resolved: nextDeferred.resolve,
-          rejected: nextDeferred.reject,
-        },
-      });
-      settle();
-    });
-
-    return nextDeferred.promise;
-  };
-
-  return {
-    resolve,
-    reject,
-    promise: {
-      then,
-    },
-  };
-};
-
-const APlus = {
-  resolved: value => {
-    const d = deferred();
-    d.resolve(value);
-    return d.promise;
-  },
-  rejected: value => {
-    const d = deferred();
-    d.reject(value);
-    return d.promise;
-  },
-  deferred,
-};
-
 const add = x => y => x + y;
 const sub = x => y => y - x;
 
 for (const [desc, P] of
   [
     ['Native', adaptNativeAPI(Promise)],
-    ['Candidate Implementation', APlus],
+    ['Candidate Implementation', promise],
   ]) {
   describe(desc, () => {
     describe('A chain', () => {
@@ -215,5 +113,3 @@ for (const [desc, P] of
     });
   });
 }
-
-module.exports = APlus;
