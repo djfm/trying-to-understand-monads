@@ -125,5 +125,19 @@ for (const [desc, P] of
           x => x.should.equal('hey')
         );
     });
+
+    it('the state of a deep resolved promise is assumed', () => {
+      const y = {
+        then: onFulfilled => onFulfilled(
+          P.resolved('hey')
+        ),
+      };
+      return P
+        .resolved('dummy')
+        .then(() => P.resolved(y))
+        .then(
+          x => x.should.equal('hey')
+        );
+    });
   });
 }
