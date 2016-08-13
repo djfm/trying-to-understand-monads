@@ -161,5 +161,20 @@ for (const [desc, P] of
           }
         });
     });
+
+    it('the state of a thenable that throws after resolve is assumed', () => {
+      const y = {
+        then: onFulfilled => {
+          onFulfilled('hey');
+          throw new Error('woops');
+        },
+      };
+      return P
+        .resolved('dummy')
+        .then(() => y)
+        .then(
+          x => x.should.equal('hey')
+        );
+    });
   });
 }
