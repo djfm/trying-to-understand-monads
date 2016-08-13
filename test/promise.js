@@ -1,4 +1,5 @@
 const promise = require('../lib/promise');
+const chai = require('chai');
 
 const adaptNativeAPI = NativePromise => ({
   resolved: v => NativePromise.resolve(v),
@@ -196,6 +197,28 @@ for (const [desc, P] of
         .then(() => x)
         .then(
           v => v.should.equal('hey')
+        );
+    });
+
+    it('the state of a thenable that throws before resolving is assumed', () => {
+      const y = {
+        then: () => {
+          throw new Error('woops');
+        },
+      };
+
+      const x = {
+        then: onFulfilled => {
+          onFulfilled(y);
+        },
+      };
+
+      return P
+        .resolved('dummy')
+        .then(() => x)
+        .then(
+          undefined,
+          e => chai.expect(e).to.be.an('error')
         );
     });
   });
