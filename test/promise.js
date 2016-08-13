@@ -176,5 +176,27 @@ for (const [desc, P] of
           x => x.should.equal('hey')
         );
     });
+
+    it('the state of a thenable that throws after resolving asynchronously is assumed', () => {
+      const y = {
+        then: onFulfilled => {
+          onFulfilled('hey');
+          throw new Error('woops');
+        },
+      };
+
+      const x = {
+        then: onFulfilled => {
+          setTimeout(() => onFulfilled(y), 0);
+        },
+      };
+
+      return P
+        .resolved('dummy')
+        .then(() => x)
+        .then(
+          v => v.should.equal('hey')
+        );
+    });
   });
 }
