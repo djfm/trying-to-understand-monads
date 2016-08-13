@@ -112,4 +112,18 @@ for (const [desc, P] of
       });
     });
   });
+
+  describe('When a thenable returns a promise, its state is assumed', () => {
+    it('the state of a resolved promise is assumed', () => {
+      const y = {
+        then: onFulfilled => onFulfilled('hey'),
+      };
+      return P
+        .resolved('dummy')
+        .then(() => P.resolved(y))
+        .then(
+          x => x.should.equal('hey')
+        );
+    });
+  });
 }
