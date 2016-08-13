@@ -114,7 +114,7 @@ for (const [desc, P] of
     });
   });
 
-  describe('When a thenable returns a promise, its state is assumed', () => {
+  describe('When a handler returns a thenable its state is assumed', () => {
     it('the state of a resolved promise is assumed', () => {
       const y = {
         then: onFulfilled => onFulfilled('hey'),
@@ -237,6 +237,43 @@ for (const [desc, P] of
           v => { v.should.equal('first'); done(); },
           () => { done(new Error('I should not be called.')); }
         );
+    });
+
+    it('a non function is not a thenable', () => {
+      const x = {
+        then: 5,
+      };
+
+      return P
+        .resolved('dummy')
+        .then(() => x)
+        .then(
+          v => { v.should.deep.equal(x); }
+        );
+    });
+
+    describe('weird thenables can be returned', () => {
+      before(() => {
+        /* eslint-disable no-extend-native */
+        Boolean.prototype.then = () => null;
+        /* eslint-enable no-extend-native */
+      });
+      after(() => {
+        /* eslint-disable no-extend-native */
+        delete Boolean.prototype.then;
+        /* eslint-enable no-extend-native */
+      });
+
+      it('a weird Boolean', () => {
+        const x = true;
+
+        return P
+          .resolved('dummy')
+          .then(() => x)
+          .then(
+            v => { v.should.deep.equal(x); }
+          );
+      });
     });
   });
 }
