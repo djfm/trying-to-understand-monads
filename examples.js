@@ -75,17 +75,20 @@ const deferred = () => {
 
   const then = (onResolved, onRejected) => {
     const nextDeferred = deferred();
-    handlers.push({
-      transformInput: {
-        resolved: onResolved,
-        rejected: onRejected,
-      },
-      propagateOutput: {
-        resolved: nextDeferred.resolve,
-        rejected: nextDeferred.reject,
-      },
+
+    setImmediate(() => {
+      handlers.push({
+        transformInput: {
+          resolved: onResolved,
+          rejected: onRejected,
+        },
+        propagateOutput: {
+          resolved: nextDeferred.resolve,
+          rejected: nextDeferred.reject,
+        },
+      });
+      settle();
     });
-    settle();
 
     return nextDeferred.promise;
   };
