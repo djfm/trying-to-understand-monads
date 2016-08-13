@@ -221,5 +221,22 @@ for (const [desc, P] of
           e => chai.expect(e).to.be.an('error')
         );
     });
+
+    it('only the first handler is called', done => {
+      const x = {
+        then: (resolve, reject) => {
+          resolve('first');
+          reject(new Error('I should be ignored.'));
+        },
+      };
+
+      return P
+        .resolved('dummy')
+        .then(() => x)
+        .then(
+          v => { v.should.equal('first'); done(); },
+          () => { done(new Error('I should not be called.')); }
+        );
+    });
   });
 }
